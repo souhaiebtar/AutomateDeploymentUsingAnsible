@@ -1,12 +1,12 @@
 ---
 
-- hosts: boxes
+- hosts: all
   gather_facts: true
   become: yes
   become_method: sudo
 
   vars:
-    rmt_user: ubuntu
+    rmt_user: vagrant
     docker_group: docker
 
   handlers:
@@ -51,8 +51,26 @@
         append: yes
       notify: "start docker on boot"
 
+
+- hosts: manager
+  become: yes
+  become_method: sudo
+  tasks:
     - name: download docker-compose
       get_url:
         url: https://github.com/docker/compose/releases/download/1.22.0/docker-compose-Linux-x86_64
         dest: /usr/local/bin/docker-compose
         mode: 0755
+      #when: ansible_nodename == "192-168-22-10-nip-io"
+
+    - name: init swarm cluster
+      command: docker swarm init --advertise-addr '192.168.22.10'
+      #when: ansible_nodename == "192-168-22-10-nip-io"
+
+
+
+    #- name: Init Docker swarm
+    #  docker_swarm:
+    #    state: present
+    #    advertise_addr: 192.168.22.10
+    #  when: ansible_nodename == "192-168-22-10-nip-io"
