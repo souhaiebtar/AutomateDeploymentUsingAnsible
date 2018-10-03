@@ -63,14 +63,114 @@
         mode: 0755
       #when: ansible_nodename == "192-168-22-10-nip-io"
 
-    - name: init swarm cluster
-      command: docker swarm init --advertise-addr '192.168.22.10'
-      #when: ansible_nodename == "192-168-22-10-nip-io"
+    - name: determine swarm status
+      shell: >
+        docker info | egrep '^Swarm: ' | cut -d ' ' -f2
+      register: swarm_status
+
+    - name: create swarm_manager_operational_group
+      add_host:
+        hostname: "{{ item }}"
+        groups: swarm_manager_operational
+      with_items: "{{ ansible_play_batch }}"
+      when: "'active' in swarm_status.stdout_lines"
+      run_once: true
+
+    - name: create swarm_manager_bootstrap_group
+      add_host:
+        hostname: "{{ item }}"
+        groups: swarm_manager_bootstrap
+      with_items: "{{ ansible_play_batch }}"
+      when: "'active' not in swarm_status.stdout_lines"
+      run_once: true
+
+- hosts: worker
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: determine swarm status
+      shell: >
+        docker info | egrep '^Swarm: ' | cut -d ' ' -f2
+      register: swarm_status
+
+    - name: create swarm_worker_operational group
+      add_host:
+        hostname: "{{ item }}"
+        groups: swarm_worker_operational
+      with_items: "{{ ansible_play_batch }}"
+      when: "'active' in swarm_status.stdout_lines"
+      run_once: true
+
+    - name: create swarm_worker_bootstrap group
+      add_host:
+        hostname: "{{ item }}"
+        groups: swarm_worker_bootstrap
+      with_items: "{{ ansible_play_batch }}"
+      when: "'active' not in swarm_status.stdout_lines"
+      run_once: true
 
 
+- hosts: swarm_manager_bootstrap[0]
+  become: true
+  tasks:
+    - name: initialize swarm cluster
+      shell: >
+        docker swarm init
+        --advertise-addr={{ swarm_iface | default('eth1') }}:2377
+      when: "'swarm_manager_operational' not in groups"
+      register: bootstrap_first_node
 
-    #- name: Init Docker swarm
-    #  docker_swarm:
-    #    state: present
-    #    advertise_addr: 192.168.22.10
-    #  when: ansible_nodename == "192-168-22-10-nip-io"
+    - name: add initialized host to swarm_manager_operational group
+      add_host:
+        hostname: "{{ ansible_play_batch[0] }}"
+        groups: swarm_manager_operational
+      when: bootstrap_first_node is changed
+    #- name: init swarm cluster
+    #  command: docker swarm init --advertise-addr '192.168.22.10'
+    #  #when: ansible_nodename == "192-168-22-10-nip-io"
+
+- hosts: swarm_manager_operational[0]
+  become: true
+  vars:
+    iface: "{{ swarm_iface | default('eth1') }}"
+  tasks:
+    - name: retrieve swarm manager token
+      shell: docker swarm join-token -q manager
+      register: swarm_manager_token
+
+    - name: retrieve swarm worker token
+      shell: docker swarm join-token -q worker
+      register: swarm_worker_token
+
+    - name: populate list of manager ips
+      add_host:
+        hostname: "{{ hostvars[item]['ansible_' + iface]['ipv4']['address'] }}"
+        groups: swarm_manager_ips
+      with_items: "{{ ansible_play_batch }}"
+
+#   - name: Show Worker Token
+#     debug: var=swarm_worker_token.stdout
+
+- hosts: swarm_manager_bootstrap:!swarm_manager_operational
+  become: true
+  vars:
+    token: "{{ hostvars[groups['swarm_manager_operational'][0]]['swarm_manager_token']['stdout'] }}"
+  tasks:
+    - name: join manager nodes to cluster
+      shell: >
+        docker swarm join
+        --advertise-addr={{ swarm_iface | default('eth1') }}:2377
+        --token={{ token }}
+        {{ groups['swarm_manager_ips'][0] }}:2377
+
+- hosts: swarm_worker_bootstrap
+  become: true
+  vars:
+    token: "{{ hostvars[groups['swarm_manager_operational'][0]]['swarm_worker_token']['stdout'] }}"
+  tasks:
+    - name: join worker nodes to cluster
+      shell: >
+        docker swarm join
+        --advertise-addr={{ swarm_iface | default('eth1') }}:2377
+        --token={{ token }}
+        {{ groups['swarm_manager_ips'][0] }}:2377
