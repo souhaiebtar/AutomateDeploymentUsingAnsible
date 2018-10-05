@@ -6,7 +6,6 @@
   become_method: sudo
 
   vars:
-    rmt_user: vagrant
     docker_group: docker
 
   handlers:
@@ -28,16 +27,21 @@
         repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
 
     - name: Install list of packages
+      # apt:
+      #   name: "{{ item }}"
+      #   state: present
+      #   update_cache: yes
+      # with_items:
+      #   - apt-transport-https
+      #   - ca-certificates
+      #   - curl
+      #   - software-properties-common
+      #   - docker-ce
+      # can be replaced by
       apt:
-        name: "{{ item }}"
+        name: ['apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'docker-ce']
         state: present
         update_cache: yes
-      with_items:
-        - apt-transport-https
-        - ca-certificates
-        - curl
-        - software-properties-common
-        - docker-ce
 
     - name: Create "docker" group
       group:
@@ -46,7 +50,7 @@
 
     - name: Add user to docker group
       user:
-        name: "{{ rmt_user }}"
+        name: "{{ ansible_user }}"
         group: "{{ docker_group }}"
         append: yes
       notify: "start docker on boot"
@@ -55,7 +59,13 @@
 - hosts: manager
   become: yes
   become_method: sudo
+  vars:
+    home: "{{home_path.stdout}}"
   tasks:
+    - name: get home path
+      become_user: "{{ ansible_user }}"
+      shell: "echo $HOME"
+      register: home_path
     - name: download docker-compose
       get_url:
         url: https://github.com/docker/compose/releases/download/1.22.0/docker-compose-Linux-x86_64
@@ -83,6 +93,26 @@
       with_items: "{{ ansible_play_batch }}"
       when: "'active' not in swarm_status.stdout_lines"
       run_once: true
+
+    - name: Create an overlay network
+      shell: >
+        docker network create --driver overlay attachable appnet || echo 'notcreated'
+      register: network_overlay_status
+
+    #- name: create nginx directory
+    #  shell: >
+    #    mkdir $HOME/nginx
+
+    #- name: create nginx directory
+    #  file: path=/home/vagrant/nginx12 state=directory
+    - name: show home
+      debug: var=home_path.stdout
+    - name: Create nginx
+      file:
+        path: "{{home}}/nginx"
+        state: directory
+
+
 
 - hosts: worker
   become: yes
