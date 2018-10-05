@@ -96,7 +96,7 @@
 
     - name: Create an overlay network
       shell: >
-        docker network ls | grep appnet || docker network create --driver overlay  appnet
+        docker network ls | grep appnet || docker network create --driver overlay  --attachable appnet
       #register: network_overlay_status
 
     #- name: create nginx directory
@@ -113,7 +113,7 @@
         path: "{{home}}/nginx"
         state: directory
 
-    - name: create nginx stack file
+    - name: create nginx stack files
       shell:
         cmd: |
           cat > "{{home}}/nginx"/nginx-stack.yml << EOF
@@ -208,7 +208,29 @@
           </html>
 
           EOF
-          docker stack deploy -c "{{home}}/nginx"/nginx-stack.yml nginx
+
+    - name: Create nginx docker stack
+      shell: >
+        docker stack deploy -c "{{home}}/nginx"/nginx-stack.yml nginx
+
+    #- name: Generate certificates
+    #  shell: >
+    #    sudo docker run -it --rm
+
+    - name: Generate ssl certificate for the domain
+      shell: >
+        docker run -it --rm
+        -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
+        -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
+        -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
+        -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
+        certbot/certbot
+        certonly --webroot
+        --register-unsafely-without-email --agree-tos
+        --webroot-path=/data/letsencrypt
+        --staging
+        -d io.tsouhaieb.space
+
 
 
 
