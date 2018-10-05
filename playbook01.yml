@@ -96,8 +96,8 @@
 
     - name: Create an overlay network
       shell: >
-        docker network create --driver overlay attachable appnet || echo 'notcreated'
-      register: network_overlay_status
+        docker network ls | grep appnet || docker network create --driver overlay  appnet
+      #register: network_overlay_status
 
     #- name: create nginx directory
     #  shell: >
@@ -107,10 +107,108 @@
     #  file: path=/home/vagrant/nginx12 state=directory
     - name: show home
       debug: var=home_path.stdout
+
     - name: Create nginx
       file:
         path: "{{home}}/nginx"
         state: directory
+
+    - name: create nginx stack file
+      shell:
+        cmd: |
+          cat > "{{home}}/nginx"/nginx-stack.yml << EOF
+          version: '3.1'
+
+          services:
+
+            nginx-initial-letsencrypt:
+              image: "tsouhaieb/nginx-sts"
+              networks:
+                - appnet
+              ports:
+                - "80:80"
+              deploy:
+                mode: replicated
+                replicas: 1
+                placement:
+                  constraints:
+                    - node.role == manager
+              volumes:
+                - "./nginxgetcertificat.conf:/etc/nginx/conf/nginx.conf"
+                - "./letsencryptsite:/etc/nginx/html"
+
+          networks:
+            appnet:
+              external: true
+
+          EOF
+          cat > "{{home}}/nginx"/nginxgetcertificat.conf << EOF
+          worker_processes  1;
+
+          events {
+              worker_connections  1024;
+          }
+
+          http {
+              stream_server_traffic_status_zone;
+
+              sendfile        on;
+
+              keepalive_timeout  65;
+
+              server {
+                  listen       80;
+                  listen [::]:80;
+                  server_name  iot.tsouhaiebrpi.space;
+
+
+                  location ~ /.well-known/acme-challenge {
+                   allow all;
+                   root /etc/nginx/html;
+                  }
+
+                  root   /etc/nginx/html;
+                  index  index.html index.htm;
+
+                  location /status {
+                      stream_server_traffic_status_display;
+                      stream_server_traffic_status_display_format html;
+                  }
+              }
+          }
+
+          stream {
+              server_traffic_status_zone;
+
+
+
+              server {
+                listen 1883;
+                proxy_pass 127.0.0.1:18831;
+              }
+
+          }
+
+          EOF
+          mkdir "{{home}}/nginx"/letsencryptsite
+          cat > "{{home}}/nginx"/letsencryptsite/index.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="utf-8" />
+              <title>Let's Encrypt First Time Cert Issue Site</title>
+          </head>
+          <body>
+              <h1>Oh, hai there!</h1>
+              <p>
+                  This is the temporary site that will only be used for the very first time SSL certificates are issued by Let's Encrypt's
+                  certbot.
+              </p>
+          </body>
+          </html>
+
+          EOF
+          docker stack deploy -c "{{home}}/nginx"/nginx-stack.yml nginx
 
 
 
