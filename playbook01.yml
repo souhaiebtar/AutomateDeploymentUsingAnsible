@@ -17,7 +17,7 @@
 
   tasks:
     - debug:
-       msg: "I am connecting to {{ ansible_nodename }} which is running {{ ansible_distribution }} {{ ansible_distribution_version }}"
+       msg: "I am connecting to {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }} which is running {{ ansible_distribution }} {{ ansible_distribution_version }}"
 
     - name: Add Docker GPG key
       apt_key: url=https://download.docker.com/linux/ubuntu/gpg
@@ -59,8 +59,6 @@
 - hosts: manager
   become: yes
   become_method: sudo
-  vars:
-    home: "{{home_path.stdout}}"
   tasks:
     - name: determine swarm status
       shell: >
@@ -115,7 +113,7 @@
     - name: initialize swarm cluster
       shell: >
         docker swarm init
-        --advertise-addr={{ swarm_iface | default('eth1') }}:2377
+        --advertise-addr={{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:2377
       when: "'swarm_manager_operational' not in groups"
       register: bootstrap_first_node
 
@@ -130,8 +128,6 @@
 
 - hosts: swarm_manager_operational[0]
   become: true
-  vars:
-    iface: "{{ swarm_iface | default('eth1') }}"
   tasks:
     - name: retrieve swarm manager token
       shell: docker swarm join-token -q manager
@@ -143,7 +139,7 @@
 
     - name: populate list of manager ips
       add_host:
-        hostname: "{{ hostvars[item]['ansible_' + iface]['ipv4']['address'] }}"
+        hostname: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
         groups: swarm_manager_ips
       with_items: "{{ ansible_play_batch }}"
 
@@ -158,7 +154,7 @@
     - name: join manager nodes to cluster
       shell: >
         docker swarm join
-        --advertise-addr={{ swarm_iface | default('eth1') }}:2377
+        --advertise-addr={{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:2377
         --token={{ token }}
         {{ groups['swarm_manager_ips'][0] }}:2377
 
@@ -170,7 +166,7 @@
     - name: join worker nodes to cluster
       shell: >
         docker swarm join
-        --advertise-addr={{ swarm_iface | default('eth1') }}:2377
+        --advertise-addr={{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:2377
         --token={{ token }}
         {{ groups['swarm_manager_ips'][0] }}:2377
 
@@ -308,6 +304,6 @@
     #   register: certificat_result
     #   ignore_errors: yes
 
-    - name: Remove nginx docker stack
-      shell: >
-        docker stack rm nginx
+    # - name: Remove nginx docker stack
+    #   shell: >
+    #     docker stack rm nginx
