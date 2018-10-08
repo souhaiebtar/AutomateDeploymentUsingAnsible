@@ -1,0 +1,24 @@
+# {{ ansible_managed }}
+version: '3.1'
+
+services:
+
+  nginx-initial-letsencrypt:
+    image: "tsouhaieb/nginx-sts"
+    networks:
+      - appnet
+    ports:
+      - "80:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - "./nginxgetcertificat.conf:/etc/nginx/conf/nginx.conf"
+      - "./letsencryptsite:/etc/nginx/html"
+
+networks:
+  {{ ansible_network  }}:
+    external: true
