@@ -205,105 +205,48 @@
         path: "{{home}}/nginx"
         state: directory
 
-    - name: create nginx-stack file
+    - name: Create site folder
+      file:
+        path: "{{home}}/nginx/letsencryptsite"
+        state: directory
+
+    - name: copy nginx-stack file
       template:
         src: "./nginx-certificate/nginx-stack.yml.j2"
         dest: "{{home}}/nginx/nginx-stack.yml"
 
-    - name: create nginx stack files
-      shell:
-        cmd: |
-          cat > "{{home}}/nginx"/nginxgetcertificat.conf << EOF
-          worker_processes  1;
+    - name: copy nginx config file
+      template:
+        src: "./nginx-certificate/nginxgetcertificat.conf.j2"
+        dest: "{{home}}/nginx/nginxgetcertificat.conf"
 
-          events {
-              worker_connections  1024;
-          }
-
-          http {
-              stream_server_traffic_status_zone;
-
-              sendfile        on;
-
-              keepalive_timeout  65;
-
-              server {
-                  listen       80;
-                  listen [::]:80;
-                  server_name  iot.tsouhaiebrpi.space;
-
-
-                  location ~ /.well-known/acme-challenge {
-                   allow all;
-                   root /etc/nginx/html;
-                  }
-
-                  root   /etc/nginx/html;
-                  index  index.html index.htm;
-
-                  location /status {
-                      stream_server_traffic_status_display;
-                      stream_server_traffic_status_display_format html;
-                  }
-              }
-          }
-
-          stream {
-              server_traffic_status_zone;
-
-
-
-              server {
-                listen 1883;
-                proxy_pass 127.0.0.1:18831;
-              }
-
-          }
-
-          EOF
-          mkdir "{{home}}/nginx"/letsencryptsite
-          cat > "{{home}}/nginx"/letsencryptsite/index.html << EOF
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <meta charset="utf-8" />
-              <title>Let's Encrypt First Time Cert Issue Site</title>
-          </head>
-          <body>
-              <h1>Oh, hai there!</h1>
-              <p>
-                  This is the temporary site that will only be used for the very first time SSL certificates are issued by Let's Encrypt's
-                  certbot.
-              </p>
-          </body>
-          </html>
-
-          EOF
+    - name:  copy index.html file
+      template:
+        src: "./nginx-certificate/index.html.j2"
+        dest: "{{home}}/nginx/letsencryptsite/index.html"
 
     - name: Create nginx docker stack
       shell: >
         docker stack deploy -c "{{home}}/nginx"/nginx-stack.yml nginx
 
-    #- name: Generate certificates
-    #  shell: >
-    #    sudo docker run -it --rm
 
-    # - name: Generate ssl certificate for the domain
-    #   shell: >
-    #     docker run -it --rm
-    #     -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
-    #     -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
-    #     -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
-    #     -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
-    #     certbot/certbot
-    #     certonly --webroot
-    #     --register-unsafely-without-email --agree-tos
-    #     --webroot-path=/data/letsencrypt
-    #     --staging
-    #     -d io.tsouhaieb.space
-    #   register: certificat_result
-    #   ignore_errors: yes
 
-    # - name: Remove nginx docker stack
-    #   shell: >
-    #     docker stack rm nginx
+    - name: Generate ssl certificate for the domain
+      shell: >
+        docker run -it --rm
+        -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
+        -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
+        -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
+        -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
+        certbot/certbot
+        certonly --webroot
+        --register-unsafely-without-email --agree-tos
+        --webroot-path=/data/letsencrypt
+        --staging
+        -d {{ website_domain }}
+      register: certificat_result
+      ignore_errors: yes
+
+    - name: Remove nginx docker stack
+      shell: >
+        docker stack rm nginx
