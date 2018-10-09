@@ -250,3 +250,36 @@
     - name: Remove nginx docker stack
       shell: >
         docker stack rm nginx
+
+    - name: create dh-param directory
+      file:
+        path: "{{home}}/dh-param"
+        state: directory
+
+    - name: generate dh param file
+      shell: >
+        openssl dhparam -out {{home}}/dh-param/dhparam-2048.pem 2048
+
+    - name: create nginx-production folder
+      file:
+        path: "{{home}}/nginx-production/site"
+        state: directory
+
+    - name: copy index file
+      template:
+        src: "./nginx-certificate/index.html.j2"
+        dest: "{{home}}/nginx-production/site/index.html"
+
+    - name: copy nginx configuration file
+      template:
+        src: "./nginx-production/production.conf.j2"
+        dest: "{{home}}/nginx-production/production.conf"
+
+    - name: copy nginx-stack file
+      template:
+        src: "./nginx-production/production-stack.yml.j2"
+        dest: "{{home}}/nginx-production/production-stack.yml"
+
+    - name: Create nginx docker stack
+      shell: >
+        docker stack deploy -c "{{home}}/nginx-production"/production-stack.yml nginx

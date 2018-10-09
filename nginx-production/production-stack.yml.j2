@@ -1,0 +1,28 @@
+version: '3.1'
+
+services:
+
+  nginx-proxy:
+    image: "nginx"
+    networks:
+      - {{ ansible_network }}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "1883:1883"
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - "{{home}}/nginx-production/production.conf:/etc/nginx/conf/nginx.conf"
+      - "{{home}}/dh-param/dhparam-2048.pem:/etc/ssl/certs/dhparam-2048.pem"
+      - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{website_domain}}/fullchain.pem:/etc/letsencrypt/live/iot.tsouhaiebrpi.space/fullchain.pem"
+      - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{website_domain}}/privkey.pem:/etc/letsencrypt/live/iot.tsouhaiebrpi.space/privkey.pem"
+      - "{{home}}/nginx-production/site:/data/letsencrypt"
+
+networks:
+  {{ ansible_network  }}:
+    external: true
