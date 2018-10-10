@@ -19,8 +19,8 @@ services:
     volumes:
       - "{{home}}/nginx-production/production.conf:/etc/nginx/conf/nginx.conf"
       - "{{home}}/dh-param/dhparam-2048.pem:/etc/ssl/certs/dhparam-2048.pem"
-      - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{website_domain}}/fullchain.pem:/etc/letsencrypt/live/iot.tsouhaiebrpi.space/fullchain.pem"
-      - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{website_domain}}/privkey.pem:/etc/letsencrypt/live/iot.tsouhaiebrpi.space/privkey.pem"
+      - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{website_domain}}/fullchain.pem:/etc/letsencrypt/live/{{website_domain}}/fullchain.pem"
+      - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{website_domain}}/privkey.pem:/etc/letsencrypt/live/{{website_domain}}/privkey.pem"
       - "{{home}}/nginx-production/site:/data/letsencrypt"
 
 networks:

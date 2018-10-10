@@ -1,5 +1,5 @@
-box0 ansible_host=199.247.15.178
-box1 ansible_host=108.61.208.105
+box0 ansible_host=45.77.60.112
+box1 ansible_host=217.69.1.81
 
 
 [manager]
@@ -16,6 +16,6 @@ ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 ansible_python_interpreter=/usr/bin/python3
 ansible_user=root
 ansible_network=appnet
-website_domain=iot.tsouhaieb.space
+website_domain=iot.tsouhaiebrpi.space
 ansible_private_key_file=~/.ssh/vultr_rsa
 host_key_checking=False
