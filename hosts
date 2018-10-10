@@ -7,8 +7,10 @@ box0
 
 [worker]
 box1
+box2
 
-
+[DB]
+box2
 
 [all:vars]
 ansible_connection=ssh

@@ -175,11 +175,16 @@
   become_method: sudo
   vars:
     home: "{{home_path.stdout}}"
-  tasks:
+
     - name: get home path
       become_user: "{{ ansible_user }}"
       shell: "echo $HOME"
       register: home_path
+
+    - name: get the column number for hostname
+      cmd: docker node ls | awk -F'[[:space:]]*' '{ for (i=1; i<=NF; ++i) if ($i == "HOSTNAME") print i }'
+      register: hostname_column
+      
     - name: download docker-compose
       get_url:
         url: https://github.com/docker/compose/releases/download/1.22.0/docker-compose-Linux-x86_64
@@ -282,3 +287,22 @@
     - name: Create nginx docker stack
       shell: >
         docker stack deploy -c "{{home}}/nginx-production"/production-stack.yml nginx
+
+    - name: create thingsboard folder
+      file:
+        path: "{{home}}/thingsboard"
+        state: directory
+
+    # - name: copy thingsboard config file
+    #   template:
+    #     src: "./thingsboard-config/docker-compose.yml.j2"
+    #     dest: "{{home}}/docker-compose.yml"
+    #
+    # - name: copy thingsboard tb file
+    #   template:
+    #     src: "./thingsboard-config/tb.env.j2"
+    #     dest: "{{home}}/tb.env"
+    #
+    # - name: create thingsboard stack
+    #   shell: >
+    #     docker stack deploy -c "{{home}}/thingsboard/docker-compose.yml" thingsboard
