@@ -19,6 +19,11 @@
     - debug:
        msg: "I am connecting to {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }} which is running {{ ansible_distribution }} {{ ansible_distribution_version }}"
 
+    - name: install
+      apt:
+        name: apt-transport-https
+        state: present
+
     - name: Add Docker GPG key
       apt_key: url=https://download.docker.com/linux/ubuntu/gpg
 
@@ -39,7 +44,7 @@
       #   - docker-ce
       # can be replaced by
       apt:
-        name: ['apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'docker-ce']
+        name: ['ca-certificates', 'curl', 'software-properties-common', 'docker-ce']
         state: present
         update_cache: yes
 
@@ -175,7 +180,7 @@
   become_method: sudo
   vars:
     home: "{{home_path.stdout}}"
-
+  tasks:
     - name: get home path
       become_user: "{{ ansible_user }}"
       shell: "echo $HOME"
@@ -184,7 +189,7 @@
     - name: get the column number for hostname
       cmd: docker node ls | awk -F'[[:space:]]*' '{ for (i=1; i<=NF; ++i) if ($i == "HOSTNAME") print i }'
       register: hostname_column
-      
+
     - name: download docker-compose
       get_url:
         url: https://github.com/docker/compose/releases/download/1.22.0/docker-compose-Linux-x86_64
