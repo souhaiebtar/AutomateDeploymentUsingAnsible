@@ -1,7 +1,6 @@
-manager0 ansible_host=51.158.68.59
-worker0 ansible_host=212.47.233.189
-db0 ansible_host=51.158.64.197
-
+manager0 ansible_host=212.47.233.189
+worker0 ansible_host=51.158.64.197
+db0 ansible_host=51.158.68.59
 [manager]
 manager0
 

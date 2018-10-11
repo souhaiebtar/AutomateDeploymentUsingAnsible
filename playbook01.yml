@@ -63,7 +63,14 @@
 - hosts: db
   become: yes
   become_method: sudo
+  vars:
+    home: "{{home_path.stdout}}"
   tasks:
+    - name: get home path
+      become_user: "{{ ansible_user }}"
+      shell: "echo $HOME"
+      register: home_path
+
     - name: change hostname to db
       hostname:
         name: "db"
@@ -75,6 +82,10 @@
         line: '127.0.0.1 localhost db'
         state: present
 
+    - name: create cassandra volumes folder
+      file:
+        path: "{{home}}/cassandra_volumes"
+        state: directory
 
 - hosts: manager
   become: yes
@@ -201,10 +212,10 @@
       shell: "echo $HOME"
       register: home_path
 
-    - name: get the column number for hostname
-      shell: >
-        docker node ls | awk -F'[[:space:]]*' '{ for (i=1; i<=NF; ++i) if ($i == "HOSTNAME") print i }'
-      register: hostname_column
+    # - name: get the column number for hostname
+    #   shell: >
+    #     docker node ls | awk -F'[[:space:]]*' '{ for (i=1; i<=NF; ++i) if ($i == "HOSTNAME") print i }'
+    #   register: hostname_column
 
       #CHANGED temporary comment from line 194 -> 300 (line after, path: "{{home}}/thingsboard")
     # - name: download docker-compose
@@ -213,118 +224,138 @@
     #     dest: /usr/local/bin/docker-compose
     #     mode: 0755
     #   #when: ansible_nodename == "192-168-22-10-nip-io"
-    # - name: Create an overlay network
-    #   shell: >
-    #     docker network ls | grep appnet || docker network create --driver overlay appnet
-    # #register: network_overlay_status
-    #
-    # #- name: create nginx directory
-    # #  shell: >
-    # #    mkdir $HOME/nginx
-    #
-    # #- name: create nginx directory
-    # #  file: path=/home/vagrant/nginx12 state=directory
-    # - name: show home
-    #   debug: var=home_path.stdout
-    #
-    # - name: Create nginx folder
-    #   file:
-    #     path: "{{home}}/nginx"
-    #     state: directory
-    #
-    # - name: Create site folder
-    #   file:
-    #     path: "{{home}}/nginx/letsencryptsite"
-    #     state: directory
-    #
-    # - name: copy nginx-stack file
-    #   template:
-    #     src: "./nginx-certificate/nginx-stack.yml.j2"
-    #     dest: "{{home}}/nginx/nginx-stack.yml"
-    #
-    # - name: copy nginx config file
-    #   template:
-    #     src: "./nginx-certificate/nginxgetcertificat.conf.j2"
-    #     dest: "{{home}}/nginx/nginxgetcertificat.conf"
-    #
-    # - name:  copy index.html file
-    #   template:
-    #     src: "./nginx-certificate/index.html.j2"
-    #     dest: "{{home}}/nginx/letsencryptsite/index.html"
-    #
-    # - name: Create nginx docker stack
-    #   shell: >
-    #     docker stack deploy -c "{{home}}/nginx"/nginx-stack.yml nginx
-    #
-    #
-    #
-    # - name: Generate ssl certificate for the domain
-    #   shell: >
-    #     docker run -it --rm
-    #     -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
-    #     -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
-    #     -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
-    #     -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
-    #     certbot/certbot
-    #     certonly --webroot
-    #     --email {{email_for_certificat}} --agree-tos --no-eff-email
-    #     --webroot-path=/data/letsencrypt
-    #     -d {{ website_domain }}
-    #   register: certificat_result
-    #   ignore_errors: yes
-    #
-    # - name: Remove nginx docker stack
-    #   shell: >
-    #     docker stack rm nginx
-    #
-    # - name: create dh-param directory
-    #   file:
-    #     path: "{{home}}/dh-param"
-    #     state: directory
-    #
-    # - name: generate dh param file
-    #   shell: >
-    #     openssl dhparam -out {{home}}/dh-param/dhparam-2048.pem 2048
-    #
-    # - name: create nginx-production folder
-    #   file:
-    #     path: "{{home}}/nginx-production/site"
-    #     state: directory
-    #
-    # - name: copy index file
-    #   template:
-    #     src: "./nginx-certificate/index.html.j2"
-    #     dest: "{{home}}/nginx-production/site/index.html"
-    #
-    # - name: copy nginx configuration file
-    #   template:
-    #     src: "./nginx-production/production.conf.j2"
-    #     dest: "{{home}}/nginx-production/production.conf"
-    #
-    # - name: copy nginx-stack file
-    #   template:
-    #     src: "./nginx-production/production-stack.yml.j2"
-    #     dest: "{{home}}/nginx-production/production-stack.yml"
-    #
-    # - name: Create nginx docker stack
-    #   shell: >
-    #     docker stack deploy -c "{{home}}/nginx-production"/production-stack.yml nginx
-    #
-    # - name: create thingsboard folder
-    #   file:
-    #     path: "{{home}}/thingsboard"
-    #     state: directory
+    - name: Create an overlay network
+      shell: >
+        docker network ls | grep appnet || docker network create --driver overlay appnet
+    #register: network_overlay_status
 
-    # - name: copy thingsboard config file
-    #   template:
-    #     src: "./thingsboard-config/docker-compose.yml.j2"
-    #     dest: "{{home}}/docker-compose.yml"
-    #
-    # - name: copy thingsboard tb file
-    #   template:
-    #     src: "./thingsboard-config/tb.env.j2"
-    #     dest: "{{home}}/tb.env"
-    #
-    # - name: create thingsboard stack
-    #   shell: >
-    #     docker stack deploy -c "{{home}}/thingsboard/docker-compose.yml" thingsboard
+    #- name: create nginx directory
+    #  shell: >
+    #    mkdir $HOME/nginx
+
+    #- name: create nginx directory
+    #  file: path=/home/vagrant/nginx12 state=directory
+    - name: show home
+      debug: var=home_path.stdout
+
+    - name: Create nginx folder
+      file:
+        path: "{{home}}/nginx"
+        state: directory
+
+    - name: Create site folder
+      file:
+        path: "{{home}}/nginx/letsencryptsite"
+        state: directory
+
+    - name: copy nginx-stack file
+      template:
+        src: "./nginx-certificate/nginx-stack.yml.j2"
+        dest: "{{home}}/nginx/nginx-stack.yml"
+
+    - name: copy nginx config file
+      template:
+        src: "./nginx-certificate/nginxgetcertificat.conf.j2"
+        dest: "{{home}}/nginx/nginxgetcertificat.conf"
+
+    - name:  copy index.html file
+      template:
+        src: "./nginx-certificate/index.html.j2"
+        dest: "{{home}}/nginx/letsencryptsite/index.html"
+
+
+
+    #copy cassandra file and run cassandra stack
+    - name: create cassandra folder
+      file:
+        path: "{{home}}/cassandra"
+        state: directory
+
+
+
+    - name: copy cassandra config file
+      template:
+        src: "./cassandra-config/cassandra-compose.yml.j2"
+        dest: "{{home}}/cassandra/cassandra-compose.yml"
+
+    - name: run cassandra stack
+      shell: >
+        docker stack deploy -c "{{home}}/cassandra/cassandra-compose.yml" cassandra
+    # copy thingsboard file and run thingsboard stack
+    - name: create thingsboard folder
+      file:
+        path: "{{home}}/thingsboard"
+        state: directory
+
+    - name: copy thingsboard config file
+      template:
+        src: "./thingsboard-config/docker-compose.yml.j2"
+        dest: "{{home}}/thingsboard/docker-compose.yml"
+
+    - name: copy thingsboard tb file
+      template:
+        src: "./thingsboard-config/tb.env.j2"
+        dest: "{{home}}/thingsboard/tb.env"
+
+    - name: create thingsboard stack
+      shell: >
+        docker stack deploy -c "{{home}}/thingsboard/docker-compose.yml" thingsboard
+
+
+    - name: Create nginx docker stack
+      shell: >
+        docker stack deploy -c "{{home}}/nginx"/nginx-stack.yml nginx
+
+
+
+    - name: Generate ssl certificate for the domain
+      shell: >
+        docker run -it --rm
+        -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
+        -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
+        -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
+        -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
+        certbot/certbot
+        certonly --webroot
+        --email {{email_for_certificat}} --agree-tos --no-eff-email
+        --webroot-path=/data/letsencrypt
+        -d {{ website_domain }}
+      register: certificat_result
+      ignore_errors: yes
+
+    - name: Remove nginx docker stack
+      shell: >
+        docker stack rm nginx
+
+    - name: create dh-param directory
+      file:
+        path: "{{home}}/dh-param"
+        state: directory
+
+    - name: generate dh param file
+      shell: >
+        openssl dhparam -out {{home}}/dh-param/dhparam-2048.pem 2048
+
+    - name: create nginx-production folder
+      file:
+        path: "{{home}}/nginx-production/site"
+        state: directory
+
+    - name: copy index file
+      template:
+        src: "./nginx-certificate/index.html.j2"
+        dest: "{{home}}/nginx-production/site/index.html"
+
+    - name: copy nginx configuration file
+      template:
+        src: "./nginx-production/production.conf.j2"
+        dest: "{{home}}/nginx-production/production.conf"
+
+    - name: copy nginx-stack file
+      template:
+        src: "./nginx-production/production-stack.yml.j2"
+        dest: "{{home}}/nginx-production/production-stack.yml"
+
+    - name: Create nginx docker stack
+      shell: >
+        docker stack deploy -c "{{home}}/nginx-production"/production-stack.yml nginx

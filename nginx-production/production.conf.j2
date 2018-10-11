@@ -30,8 +30,15 @@ server {
   ssl_stapling on;
   ssl_stapling_verify on;
   resolver 8.8.8.8;
-  root /etc/nginx/html;
-  index index.html;
+  #root /etc/nginx/html;
+  #index index.html;
+  location / {
+      proxy_pass http://thingsboard_tb:8080;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "Upgrade";
+      proxy_set_header Host $host;
+    }
 
   location /status {
             stream_server_traffic_status_display;
@@ -39,5 +46,19 @@ server {
   }
 }
 
+}
+
+stream {
+    server_traffic_status_zone;
+    upstream mqtt_cluster {
+      server thingsboard_tb:1883;
+    }
+
+
+    server {
+      listen 1883;
+      proxy_pass mqtt_cluster;
+      proxy_connect_timeout 1s;
+    }
 
 }

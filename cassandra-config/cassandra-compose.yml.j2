@@ -1,0 +1,17 @@
+version: '3'
+services:
+  db:
+    image: "cassandra"
+    #image: "m2mgroupe/thingsboard-healthcheck"
+    networks:
+      - {{ ansible_network }}
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.hostname == db
+    volumes:
+      - "{{home}}/cassandra_volumes:/var/lib/cassandra"
+networks:
+  appnet:
+    external: true

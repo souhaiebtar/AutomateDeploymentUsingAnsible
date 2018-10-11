@@ -4,16 +4,17 @@ services:
     image: "tsouhaieb/thingsboard_healthcheck_log_cd"
     #image: "m2mgroupe/thingsboard-healthcheck"
     networks:
-      - appnet
+      - {{ ansible_network }}
     ports:
       - "5683:5683/udp"
     deploy:
-      mode: global
+      mode: replicated
+      replicas: 1
       placement:
         constraints:
-          - node.labels.type != db
+          - node.hostname != db
     env_file:
-      - tb.env
+      - {{home}}/thingsboard/tb.env
     environment:
       - ADD_SCHEMA_AND_SYSTEM_DATA=true
       - ADD_DEMO_DATA=true
