@@ -317,9 +317,11 @@
         -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
         certbot/certbot
         certonly --webroot
-        --email {{email_for_certificat}} --agree-tos --no-eff-email
-        --webroot-path=/data/letsencrypt
+        --register-unsafely-without-email --agree-tos \
+        --webroot-path=/data/letsencrypt \
+        --staging \
         -d {{ website_domain }}
+        
       register: certificat_result
       ignore_errors: yes
 
