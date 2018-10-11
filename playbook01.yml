@@ -60,6 +60,21 @@
         append: yes
       notify: "start docker on boot"
 
+- hosts: db
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: change hostname to db
+      hostname:
+        name: "db"
+
+    - name: add myself to /etc/hosts
+      lineinfile:
+        dest: /etc/hosts
+        regexp: '^127\.0\.0\.1[ \t]+localhost'
+        line: '127.0.0.1 localhost db'
+        state: present
+
 
 - hosts: manager
   become: yes

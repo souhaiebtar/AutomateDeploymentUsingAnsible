@@ -1,16 +1,19 @@
-box0 ansible_host=45.77.60.112
-box1 ansible_host=217.69.1.81
-
+manager0 ansible_host=51.158.68.59
+worker0 ansible_host=212.47.233.189
+db0 ansible_host=51.158.64.197
 
 [manager]
-box0
+manager0
 
 [worker]
-box1
-box2
+worker0
+db0
 
-[DB]
-box2
+[db]
+db0
+
+
+
 
 [all:vars]
 ansible_connection=ssh
@@ -20,5 +23,5 @@ ansible_user=root
 ansible_network=appnet
 website_domain=iot.tsouhaiebrpi.space
 email_for_certificat=tsouhaieb@gmail.com
-ansible_private_key_file=~/.ssh/vultr_rsa
+ansible_private_key_file=~/.ssh/scaleway_rsa
 host_key_checking=False
