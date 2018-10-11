@@ -321,7 +321,7 @@
         --webroot-path=/data/letsencrypt \
         --staging \
         -d {{ website_domain }}
-        
+
       register: certificat_result
       ignore_errors: yes
 
@@ -361,3 +361,7 @@
     - name: Create nginx docker stack
       shell: >
         docker stack deploy -c "{{home}}/nginx-production"/production-stack.yml nginx
+
+    - name: run sts exporter service
+      shell: >
+        docker service create --name sts-exporter --network appnet --mode global --constraint 'node.role == manager' --publish 9913:9913 --env NGIX_HOST="http://nginx_nginx-proxy/status/format/json" --env METRICS_NS="nginx" marrotte/nginx-sts-exporter
