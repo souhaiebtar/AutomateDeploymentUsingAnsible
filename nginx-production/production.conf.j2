@@ -8,16 +8,14 @@ http {
 server {
       listen 80;
       server_name {{ website_domain }};
-
-      location / {
-          rewrite ^ https://$host$request_uri? permanent;
-      }
-
       location /status {
             stream_server_traffic_status_display;
             stream_server_traffic_status_display_format html;
       }
 
+      location / {
+          rewrite ^ https://$host$request_uri? permanent;
+      }
 }
 
 server {
