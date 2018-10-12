@@ -218,11 +218,11 @@
     #   register: hostname_column
 
       #CHANGED temporary comment from line 194 -> 300 (line after, path: "{{home}}/thingsboard")
-    # - name: download docker-compose
-    #   get_url:
-    #     url: https://github.com/docker/compose/releases/download/1.22.0/docker-compose-Linux-x86_64
-    #     dest: /usr/local/bin/docker-compose
-    #     mode: 0755
+    - name: download docker-compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.22.0/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 0755
     #   #when: ansible_nodename == "192-168-22-10-nip-io"
     - name: Create an overlay network
       shell: >
@@ -339,6 +339,18 @@
         --staging \
         -d {{ monitor_domain }}
 
+
+      # docker run -it --rm
+      # -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
+      # -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
+      # -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
+      # -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
+      # certbot/certbot
+      # certonly --webroot
+      #--email {{ email_for_certificat }} --agree-tos --no-eff-email \
+      # --webroot-path=/data/letsencrypt \
+      # -d {{ monitor_domain }}
+
       register: certificat_result
       ignore_errors: yes
 
@@ -397,6 +409,40 @@
     - name: wait 2 minutes until swarmprom launch
       pause:
         minutes: 2
+
+    - name: copy elk archive file
+      copy:
+        src: "./elk-production/docker-elk.tar.gz"
+        dest: "{{home}}/docker-elk.tar.gz"
+
+    - name: extract elk archive
+      shell: >
+        tar xzf "{{home}}/docker-elk.tar.gz"
+
+    - name: build image for elk
+      shell: >
+        cd {{home}}/docker-elk && docker-compose build
+
+
+    - name: run elk stack
+      shell: >
+        docker stack deploy -c {{home}}/docker-elk/docker-stack.yml elk
+
+    - name: wait until elk stack finish to launch
+      pause:
+        minutes: 3
+
+    - name: elasticsearch init
+      shell: >
+        docker exec "$(docker ps -q -f label=com.docker.swarm.service.name=elk_elasticsearch)" bin/init_sg.sh
+
+    - name: wait until initialization finish
+      pause:
+        minutes: 1
+
+    - name: launch logspout
+      shell: >
+        docker service create --name logspout --network appnet --mode global --mount "type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock" -e ROUTE_URIS='logstash+tcp://elk_logstash:5000' bekt/logspout-logstash
 
     - name: Create nginx production docker stack
       shell: >
