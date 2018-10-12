@@ -263,7 +263,9 @@
         src: "./nginx-certificate/index.html.j2"
         dest: "{{home}}/nginx/letsencryptsite/index.html"
 
-
+    - name: Create nginx docker stack
+      shell: >
+        docker stack deploy -c "{{home}}/nginx"/nginx-stack.yml nginx
 
     #copy cassandra file and run cassandra stack
     - name: create cassandra folder
@@ -302,9 +304,7 @@
         docker stack deploy -c "{{home}}/thingsboard/docker-compose.yml" thingsboard
 
 
-    - name: Create nginx docker stack
-      shell: >
-        docker stack deploy -c "{{home}}/nginx"/nginx-stack.yml nginx
+
 
 
 
@@ -365,3 +365,23 @@
     - name: run sts exporter service
       shell: >
         docker service create --name sts-exporter --network appnet --mode global --constraint 'node.role == manager' --publish 9913:9913 --env NGIX_HOST="http://nginx_nginx-proxy/status/format/json" --env METRICS_NS="nginx" marrotte/nginx-sts-exporter
+
+    - name: copy swarmprom archive file
+      copy:
+        src: "./swarmprom-nginx/swarmprom-nginx.tar.gz"
+        dest: "{{home}}/swarmprom-nginx.tar.gz"
+
+    - name: extract swarmprom archive
+      shell: >
+        tar xzf "{{home}}/swarmprom-nginx.tar.gz"
+
+    - name: run swarmprom stack
+      shell: >
+        ADMIN_USER=admin ADMIN_PASSWORD=admin SLACK_URL=https://hooks.slack.com/services/TOKEN SLACK_CHANNEL=devops-alerts SLACK_USER=alertmanager docker stack deploy -c {{home}}/swarmprom/docker-compose.yml mon
+
+    - name: wait 2 minutes until swarmprom launch
+      pause:
+        minutes: 2
+    - name: add nginx dashboard
+      shell: >
+        curl --user admin:admin 'http://{{ansible_host}}:3000/api/dashboards/db' -X POST -H 'Content-Type:application/json;charset=UTF-8' --data-binary @{{home}}/swarmprom/swarmprom_nginx.json
