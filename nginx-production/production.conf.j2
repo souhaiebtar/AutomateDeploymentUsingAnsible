@@ -7,7 +7,8 @@ http {
 
 server {
       listen 80;
-      server_name {{ website_domain }};
+
+      server_name {{ website_domain }} {{ monitor_domain }};
       location /status {
             stream_server_traffic_status_display;
             stream_server_traffic_status_display_format html;
@@ -15,6 +16,12 @@ server {
 
       location / {
           rewrite ^ https://$host$request_uri? permanent;
+      }
+
+      #for certbot challenges (renewal process)
+      location ~ /.well-known/acme-challenge {
+           allow all;
+           root /etc/nginx/html;
       }
 }
 
@@ -40,6 +47,40 @@ server {
   #index index.html;
   location / {
       proxy_pass http://thingsboard_tb:8080;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "Upgrade";
+      proxy_set_header Host $host;
+    }
+
+  #location /status {
+  #          stream_server_traffic_status_display;
+  #          stream_server_traffic_status_display_format html;
+  #}
+}
+
+server {
+  listen 443 ssl http2;
+  server_name {{ monitor_domain }};
+  server_tokens off;
+  ssl_certificate /etc/letsencrypt/live/{{ monitor_domain }}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/{{ monitor_domain }}/privkey.pem;
+  ssl_buffer_size 8k;
+  ssl_dhparam /etc/ssl/certs/dhparam-2048.pem;
+  ssl_session_cache shared:SSL:1m;
+  ssl_session_timeout 1d;
+  ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
+  ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+  ssl_prefer_server_ciphers on;
+  ssl_ecdh_curve secp384r1;
+  ssl_session_tickets off;
+  ssl_stapling on;
+  ssl_stapling_verify on;
+  resolver 8.8.8.8;
+  #root /etc/nginx/html;
+  #index index.html;
+  location / {
+      proxy_pass http://mon_grafana:3000;
       proxy_http_version 1.1;
       proxy_set_header Upgrade $http_upgrade;
       proxy_set_header Connection "Upgrade";

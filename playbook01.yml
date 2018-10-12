@@ -375,9 +375,7 @@
         src: "./nginx-production/production-stack.yml.j2"
         dest: "{{home}}/nginx-production/production-stack.yml"
 
-    - name: Create nginx docker stack
-      shell: >
-        docker stack deploy -c "{{home}}/nginx-production"/production-stack.yml nginx
+
 
     - name: run sts exporter service
       shell: >
@@ -399,6 +397,15 @@
     - name: wait 2 minutes until swarmprom launch
       pause:
         minutes: 2
+
+    - name: Create nginx production docker stack
+      shell: >
+        docker stack deploy -c "{{home}}/nginx-production"/production-stack.yml nginx
+
+    - name: wait 1 minutes until nginx production launch
+      pause:
+        minutes: 1
+
     - name: add nginx dashboard
       shell: >
         curl --user admin:admin 'http://{{ansible_host}}:3000/api/dashboards/db' -X POST -H 'Content-Type:application/json;charset=UTF-8' --data-binary @{{home}}/swarmprom/swarmprom_nginx.json
