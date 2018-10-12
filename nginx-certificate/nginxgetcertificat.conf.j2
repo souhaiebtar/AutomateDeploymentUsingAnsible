@@ -14,8 +14,7 @@ http {
 
     server {
         listen       80;
-        listen [::]:80;
-        server_name  {{ website_domain }};
+        server_name  {{ website_domain }} {{ monitor_domain }};
 
 
         location ~ /.well-known/acme-challenge {
