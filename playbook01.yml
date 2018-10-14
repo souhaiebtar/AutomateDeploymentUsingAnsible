@@ -339,6 +339,19 @@
         --staging \
         -d {{ monitor_domain }}
 
+    - name: Generate ssl certificate for the log domain
+      shell: >
+        docker run -it --rm
+        -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
+        -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
+        -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
+        -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
+        certbot/certbot
+        certonly --webroot
+        --register-unsafely-without-email --agree-tos \
+        --webroot-path=/data/letsencrypt \
+        --staging \
+        -d {{ log_domain }}
 
       # docker run -it --rm
       # -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt

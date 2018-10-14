@@ -23,6 +23,8 @@ services:
       - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{website_domain}}/privkey.pem:/etc/letsencrypt/live/{{website_domain}}/privkey.pem"
       - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{monitor_domain}}/fullchain.pem:/etc/letsencrypt/live/{{monitor_domain}}/fullchain.pem"
       - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{monitor_domain}}/privkey.pem:/etc/letsencrypt/live/{{monitor_domain}}/privkey.pem"
+      - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{log_domain}}/fullchain.pem:/etc/letsencrypt/live/{{log_domain}}/fullchain.pem"
+      - "{{home}}/nginxcertificate/etc/letsencrypt/live/{{log_domain}}/privkey.pem:/etc/letsencrypt/live/{{log_domain}}/privkey.pem"
 
       - "{{home}}/nginx-production/site:/data/letsencrypt"
 

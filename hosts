@@ -1,6 +1,6 @@
 manager0 ansible_host=212.47.233.189
 worker0 ansible_host=51.158.64.197
-db0 ansible_host=51.158.68.59
+db0 ansible_host=51.158.78.56
 [manager]
 manager0
 
@@ -22,6 +22,7 @@ ansible_user=root
 ansible_network=appnet
 website_domain=iot.tsouhaiebrpi.space
 monitor_domain=monitor.tsouhaiebrpi.space
+log_domain=log.tsouhaiebrpi.space
 email_for_certificat=tsouhaieb@gmail.com
 ansible_private_key_file=~/.ssh/vultr_rsa
 host_key_checking=False
