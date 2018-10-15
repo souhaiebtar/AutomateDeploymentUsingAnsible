@@ -303,10 +303,35 @@
       shell: >
         docker stack deploy -c "{{home}}/thingsboard/docker-compose.yml" thingsboard
 
+    - name: wait 5 minutes until thingsboard stack finish to install the DB
+      pause:
+        minutes: 5
 
+    - name: check if thingsboard finished
+      shell: >
+        docker exec "$(docker ps -q -f label=com.docker.swarm.service.name=thingsboard_tb)" timeout 5s curl -fIsS http://localhost:8080 > /dev/null
+      retries: 20
+      delay: 2
+      register: result
+      until: result.rc == 0
 
+    - name: remove thingsboard stack
+      shell: >
+        docker stack rm thingsboard
 
+    - name: delete thingsboard config file
+      file:
+        state: absent
+        path: "{{home}}/thingsboard/docker-compose.yml"
 
+    - name: copy thingsboard mode global config file
+      template:
+        src: "./thingsboard-config/docker-production.yml.j2"
+        dest: "{{home}}/thingsboard/docker-production.yml"
+
+    - name: create thingsboard production stack
+      shell: >
+        docker stack deploy -c "{{home}}/thingsboard/docker-production.yml" thingsboard
 
     - name: Generate ssl certificate for the website domain
       shell: >
@@ -437,8 +462,9 @@
       #  tar xzf "{{home}}/docker-elk.tar.gz"
       unarchive:
         src: "{{home}}/docker-elk.tar.gz"
-        dest:
-
+        dest: "{{home}}"
+        remote_src: yes
+        
     - name: build image for elk
       shell: >
         cd {{home}}/docker-elk && docker-compose build
