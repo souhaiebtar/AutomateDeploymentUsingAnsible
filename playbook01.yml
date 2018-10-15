@@ -412,8 +412,12 @@
         dest: "{{home}}/swarmprom-nginx.tar.gz"
 
     - name: extract swarmprom archive
-      shell: >
-        tar xzf "{{home}}/swarmprom-nginx.tar.gz"
+      #shell: >
+      #  tar xzf "{{home}}/swarmprom-nginx.tar.gz"
+      unarchive:
+        src: "{{home}}/swarmprom-nginx.tar.gz"
+        dest: "{{home}}"
+        remote_src: yes
 
     - name: run swarmprom stack
       shell: >
@@ -429,8 +433,11 @@
         dest: "{{home}}/docker-elk.tar.gz"
 
     - name: extract elk archive
-      shell: >
-        tar xzf "{{home}}/docker-elk.tar.gz"
+      #shell: >
+      #  tar xzf "{{home}}/docker-elk.tar.gz"
+      unarchive:
+        src: "{{home}}/docker-elk.tar.gz"
+        dest:
 
     - name: build image for elk
       shell: >
