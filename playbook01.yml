@@ -229,12 +229,7 @@
         docker network ls | grep appnet || docker network create --driver overlay appnet
     #register: network_overlay_status
 
-    #- name: create nginx directory
-    #  shell: >
-    #    mkdir $HOME/nginx
 
-    #- name: create nginx directory
-    #  file: path=/home/vagrant/nginx12 state=directory
     - name: show home
       debug: var=home_path.stdout
 
@@ -378,6 +373,7 @@
         --staging \
         -d {{ log_domain }}
 
+      #if we want to generate production certificate we must change the above block like this
       # docker run -it --rm
       # -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
       # -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
@@ -464,7 +460,7 @@
         src: "{{home}}/docker-elk.tar.gz"
         dest: "{{home}}"
         remote_src: yes
-        
+
     - name: build image for elk
       shell: >
         cd {{home}}/docker-elk && docker-compose build
@@ -501,3 +497,12 @@
     - name: add nginx dashboard
       shell: >
         curl --user admin:admin 'http://{{ansible_host}}:3000/api/dashboards/db' -X POST -H 'Content-Type:application/json;charset=UTF-8' --data-binary @{{home}}/swarmprom/swarmprom_nginx.json
+
+    - name: add cron job for certificate renewal
+      cron:
+        minute: "00"
+        hour: "23"
+        job: "docker run --rm -it --name certbot -v "{{home}}/nginxcertificate/etc/letsencrypt:/etc/letsencrypt" -v "{{home}}/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt" -v "{{home}}/nginx-production/site:/data/letsencrypt" -v "{{home}}/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt" certbot/certbot renew --webroot -w /data/letsencrypt --quiet"
+
+    - name: send signal to nginx container
+        shell: > docker kill --signal=HUP "$(docker ps -q -f label=com.docker.swarm.service.name=nginx_nginx-proxy)"
