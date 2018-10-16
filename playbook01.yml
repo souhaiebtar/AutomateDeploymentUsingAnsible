@@ -502,8 +502,4 @@
       cron:
         minute: "00"
         hour: "23"
-        job: docker run --rm -it --name certbot -v "{{home}}/nginxcertificate/etc/letsencrypt:/etc/letsencrypt" -v "{{home}}/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt" -v "{{home}}/nginx-production/site:/data/letsencrypt" -v "{{home}}/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt" certbot/certbot renew --webroot -w /data/letsencrypt --quiet
-
-    - name: send signal to nginx container
-      shell: >
-        docker kill --signal=HUP "$(docker ps -q -f label=com.docker.swarm.service.name=nginx_nginx-proxy)"
+        job: docker run --rm -it --name certbot -v "{{home}}/nginxcertificate/etc/letsencrypt:/etc/letsencrypt" -v "{{home}}/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt" -v "{{home}}/nginx-production/site:/data/letsencrypt" -v "{{home}}/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt" certbot/certbot renew --webroot -w /data/letsencrypt --quiet && docker kill --signal=HUP "$(docker ps -q -f label=com.docker.swarm.service.name=nginx_nginx-proxy)"
