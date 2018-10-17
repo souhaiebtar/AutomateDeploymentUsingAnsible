@@ -190,17 +190,14 @@
     #     docker node ls | awk -F'[[:space:]]*' '{ for (i=1; i<=NF; ++i) if ($i == "HOSTNAME") print i }'
     #   register: hostname_column
 
-      #CHANGED temporary comment from line 194 -> 300 (line after, path: "{{home}}/thingsboard")
     - name: download docker-compose
       get_url:
         url: https://github.com/docker/compose/releases/download/1.22.0/docker-compose-Linux-x86_64
         dest: /usr/local/bin/docker-compose
         mode: 0755
-    #   #when: ansible_nodename == "192-168-22-10-nip-io"
     - name: Create an overlay network
       shell: >
         docker network ls | grep appnet || docker network create --driver overlay appnet
-    #register: network_overlay_status
 
 
     - name: show home
@@ -315,6 +312,19 @@
         --staging \
         -d {{ website_domain }}
 
+      # TODO: uncomment the next shell block,and comment the prvious one if you want to get production ready certificate
+      # shell: >
+      #   docker run -it --rm
+      #   -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
+      #   -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
+      #   -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
+      #   -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
+      #   certbot/certbot
+      #   certonly --webroot
+      #   --email {{ email_for_certificat }} --agree-tos --no-eff-email
+      #   --webroot-path=/data/letsencrypt
+      #   -d {{ website_domain }}
+
       register: certificat_result
       ignore_errors: yes
 
@@ -332,6 +342,19 @@
         --staging \
         -d {{ monitor_domain }}
 
+      # TODO: uncomment the next shell block,and comment the prvious one if you want to get production ready certificate
+      # shell: >
+      #   docker run -it --rm
+      #   -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
+      #   -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
+      #   -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
+      #   -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
+      #   certbot/certbot
+      #   certonly --webroot
+      #   --email {{ email_for_certificat }} --agree-tos --no-eff-email
+      #   --webroot-path=/data/letsencrypt
+      #   -d {{ monitor_domain }}
+
     - name: Generate ssl certificate for the log domain
       shell: >
         docker run -it --rm
@@ -346,17 +369,18 @@
         --staging \
         -d {{ log_domain }}
 
-      #if we want to generate production certificate we must change the above block like this
-      # docker run -it --rm
-      # -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
-      # -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
-      # -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
-      # -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
-      # certbot/certbot
-      # certonly --webroot
-      #--email {{ email_for_certificat }} --agree-tos --no-eff-email \
-      # --webroot-path=/data/letsencrypt \
-      # -d {{ monitor_domain }}
+      # TODO: uncomment the next shell block,and comment the prvious one if you want to get production ready certificate
+      # shell: >
+      #   docker run -it --rm
+      #   -v "{{home}}"/nginxcertificate/etc/letsencrypt:/etc/letsencrypt
+      #   -v "{{home}}"/nginxcertificate/var/lib/letsencrypt:/var/lib/letsencrypt
+      #   -v "{{home}}"/nginx/letsencryptsite:/data/letsencrypt
+      #   -v "{{home}}"/nginxcertificate/var/log/letsencrypt:/var/log/letsencrypt
+      #   certbot/certbot
+      #   certonly --webroot
+      #   --email {{ email_for_certificat }} --agree-tos --no-eff-email
+      #   --webroot-path=/data/letsencrypt
+      #   -d {{ log_domain }}
 
       register: certificat_result
       ignore_errors: yes
