@@ -15,50 +15,26 @@
         state: started
         enabled: yes
 
+  pre_tasks:
+    - name: "FIX: Ubuntu 16.04 LTS"
+      raw: apt-get install python-minimal aptitude -y
+      when: ( ansible_distribution == "Ubuntu" and ansible_distribution_version == "16.04") or ( ansible_distribution == "Debian" and ansible_distribution_major_version == "9")
+
   tasks:
 
     - debug:
        msg: "I am connecting to {{ ansible_host }} which is running {{ ansible_distribution }} {{ ansible_distribution_version }}"
 
-    - name: install apt-transport-https
-      apt:
-        name: "apt-transport-https"
-        state: present
-    - name: Add Docker GPG key
-      apt_key: url=https://download.docker.com/linux/ubuntu/gpg
+    - name: install docker on debian/ubuntu1604
+      include_tasks: "./tasks/docker_debian.yml"
+      when: ( ansible_distribution == "Ubuntu" and ansible_distribution_version == "16.04") or ( ansible_distribution == "Debian" and ansible_distribution_major_version == "9")
 
-    - name: Add Docker APT repository
-      apt_repository:
-        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
+    - name: install docker on centos7
+      include_tasks: "./tasks/docker_centos.yml"
+      when: ( ansible_distribution == "CentOS" and ansible_distribution_major_version == "7")
 
-    - name: Install list of packages
-      # apt:
-      #   name: "{{ item }}"
-      #   state: present
-      #   update_cache: yes
-      # with_items:
-      #   - apt-transport-https
-      #   - ca-certificates
-      #   - curl
-      #   - software-properties-common
-      #   - docker-ce
-      # can be replaced by
-      apt:
-        name: ['ca-certificates', 'curl', 'software-properties-common', 'docker-ce']
-        state: present
-        update_cache: yes
-
-    - name: Create "docker" group
-      group:
-        name: "{{ docker_group }}"
-        state: present
-
-    - name: Add user to docker group
-      user:
-        name: "{{ ansible_user }}"
-        group: "{{ docker_group }}"
-        append: yes
-      notify: "start docker on boot"
+    - name: add docker group and add user to it
+      include_tasks: "./tasks/docker_group.yml"
 
 - hosts: db
   become: yes
@@ -153,10 +129,7 @@
         hostname: "{{ ansible_play_batch[0] }}"
         groups: swarm_manager_operational
       when: bootstrap_first_node is changed
-    #- name: init swarm cluster
-    #  command: docker swarm init --advertise-addr '192.168.22.10'
-    #  #when: ansible_nodename == "192-168-22-10-nip-io"
-
+    
 - hosts: swarm_manager_operational[0]
   become: true
   tasks:
@@ -433,8 +406,6 @@
         dest: "{{home}}/swarmprom-nginx.tar.gz"
 
     - name: extract swarmprom archive
-      #shell: >
-      #  tar xzf "{{home}}/swarmprom-nginx.tar.gz"
       unarchive:
         src: "{{home}}/swarmprom-nginx.tar.gz"
         dest: "{{home}}"
@@ -454,8 +425,6 @@
         dest: "{{home}}/docker-elk.tar.gz"
 
     - name: extract elk archive
-      #shell: >
-      #  tar xzf "{{home}}/docker-elk.tar.gz"
       unarchive:
         src: "{{home}}/docker-elk.tar.gz"
         dest: "{{home}}"
