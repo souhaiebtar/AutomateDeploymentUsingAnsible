@@ -1,0 +1,25 @@
+---
+
+
+- name: update cache
+  apt:
+    update_cache: yes
+  ignore_errors: yes
+
+- name: install apt-transport-https
+  apt:
+    name: "apt-transport-https"
+    state: present
+
+- name: Add Docker GPG key
+  apt_key: url=https://download.docker.com/linux/ubuntu/gpg
+
+- name: Add Docker APT repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ansible_distribution_release}} stable
+
+- name: Install list of packages
+  apt:
+    name: ['ca-certificates', 'curl', 'software-properties-common', 'docker-ce']
+    state: present
+    update_cache: yes
